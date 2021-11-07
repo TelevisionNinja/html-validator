@@ -1,3 +1,6 @@
+#ifndef HTMLVALIDATOR_H
+#define HTMLVALIDATOR_H
+
 #include <fstream>
 #include <iostream>
 #include <unordered_set>
@@ -5,6 +8,6 @@
 #include <vector>
 #include <string>
 
-namespace tvnj {
-    void HTMLValidator(std::string file);
-}
+void HTMLValidator(std::string file);
+
+#endif
