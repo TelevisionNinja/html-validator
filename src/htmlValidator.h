@@ -5,7 +5,6 @@
 #include <iostream>
 #include <unordered_set>
 #include <stack>
-#include <vector>
 #include <string>
 
 void HTMLValidator(std::string file);
