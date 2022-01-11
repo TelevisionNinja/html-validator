@@ -30,7 +30,7 @@ std::unordered_set<std::string> voidElements = {
 
 // check for void elements
 bool isVoidElement(std::string tag) {
-    return voidElements.count(tag);
+    return voidElements.contains(tag);
 }
 
 /**
