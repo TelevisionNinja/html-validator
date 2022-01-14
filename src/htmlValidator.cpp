@@ -78,8 +78,8 @@ bool HTMLValidator(std::string file) {
 
     // integer to keep track of the line number
     int lineNum = 1,
-        // integer to keep track of the character number
-        charIndex = 1;
+        // integer to keep track of the character number. starts at zero because when the end of a tag is detected, the char number will be at the detected end char
+        charIndex = 0;
 
     // char to keep track of the current character
     char ch = din.get(),
@@ -155,7 +155,7 @@ bool HTMLValidator(std::string file) {
             lineNum++;
 
             // reset character number when on a new line
-            charIndex = 1;
+            charIndex = 0;
 
             // reset comment detection
             inComment = false;
@@ -179,7 +179,7 @@ bool HTMLValidator(std::string file) {
                     std::string check = stack.top();
 
                     // compare the tag with the stack to check for errors
-                    if (tag == check.substr(0, tag.size())) {
+                    if (tag == check) {
                         stack.pop();
 
                         // reset script and css states
@@ -193,7 +193,7 @@ bool HTMLValidator(std::string file) {
 
                         // HTML nesting error
                         std::cout << "Tag nesting error on line " << lineNum
-                            << " at character number " << charIndex
+                            << " at character number " << charIndex - tag.size()
                             << " for: </" << tag << ">\n"
                             << "The expected tag was: </" << check << ">\n";
 
@@ -203,7 +203,7 @@ bool HTMLValidator(std::string file) {
                 else {
                     // filter out special tags, comments, scripts, and CSS
                     if ((!inScript && !inCSS && !isVoidElement(tag) && tag.substr(0, 3) != "!--")
-                        || (!inMultiComment && !inComment && (tag == "script" || tag == "style"))) {
+                        || (!inMultiComment && !inComment && (tag == scriptTag || tag == styleTag))) {
                         stack.push(tag);
                     }
                 }
