@@ -78,7 +78,7 @@ bool HTMLValidator(std::string file) {
 
     // integer to keep track of the line number
     int lineNum = 1,
-        // integer to keep track of the character number. starts at zero because when the end of a tag is detected, the char number will be at the detected end char
+        // integer to keep track of the character number. starts at zero because when the end of a tag is detected, the char number will be at the detected tag ending char
         charIndex = 0;
 
     // char to keep track of the current character
@@ -169,7 +169,7 @@ bool HTMLValidator(std::string file) {
             inTag = true;
         }
 
-        // check if it is in a tag
+        // check if the iteration is in a tag
         else if (inTag) {
             // detect end of a tag
             if (ch == '>' || ch == ' ') {
@@ -241,7 +241,7 @@ bool HTMLValidator(std::string file) {
         previous = ch;
         ch = din.get();
 
-        // iterate the char number in the current line
+        // increment the char number in the current line
         charIndex++;
     }
 
