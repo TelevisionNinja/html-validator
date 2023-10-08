@@ -1,2 +1,10 @@
 # html-validator
-This was a school project where I had to make an HTML validator using a stack. I went above and beyond by trying to make it validate any HTML other than the ones provided in the project.
+This was a university project where I had to make an HTML validator. I went above and beyond by making it validate any HTML other than the ones provided for the project.
+
+## Example Output Messages:
+### Tag Nesting Error
+![nest](./images/nest.png)
+### End Tag Error
+![end_tag](./images/end_tag.png)
+### Valid HTML
+![valid](./images/valid.png)
