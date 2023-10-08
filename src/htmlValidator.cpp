@@ -74,7 +74,8 @@ bool HTMLValidator(std::string file) {
         inCSS = false,
         // booleans to ckeck if the iteration is in a comment
         inComment = false,
-        inMultiComment = false;
+        inMultiComment = false,
+        inHTMLComment = false;
 
     // integer to keep track of the line number
     int lineNum = 1,
@@ -100,12 +101,12 @@ bool HTMLValidator(std::string file) {
         // ignore scripts and CSS
 
         // ignore scripts
-        if (tag == scriptTag) {
+        if (!inHTMLComment && tag == scriptTag) {
             inScript = true;
         }
 
         // ignore CSS
-        else if (tag == styleTag) {
+        else if (!inHTMLComment && tag == styleTag) {
             inCSS = true;
         }
 
@@ -115,23 +116,23 @@ bool HTMLValidator(std::string file) {
         // detect comments and strings
 
         // ignore multi line comments
-        if (isScriptOrCSS && !inString && !inComment && previous == '/' && ch == '*') {
+        if (!inHTMLComment && isScriptOrCSS && !inString && !inComment && previous == '/' && ch == '*') {
             inMultiComment = true;
         }
-        else if (isScriptOrCSS && !inString && inMultiComment && previous == '*' && ch == '/') {
+        else if (!inHTMLComment && isScriptOrCSS && !inString && inMultiComment && previous == '*' && ch == '/') {
             inMultiComment = false;
         }
 
         // ignore single line comments
-        else if (isScriptOrCSS && !inString && !inMultiComment && previous == '/' && ch == '/') {
+        else if (!inHTMLComment && isScriptOrCSS && !inString && !inMultiComment && previous == '/' && ch == '/') {
             inComment = true;
         }
 
         // ignore strings
-        else if (ch == '"' || ch == '\'') {
+        else if (!inHTMLComment && (ch == '"' || ch == '\'' || ch == '`')) {
             if (inString) {
                 if (stringChar == ch) {
-                    if (isScriptOrCSS) {
+                    if ((ch == '`' && inScript) || (ch != '`' && isScriptOrCSS)) {
                         if (previous != '\\') {
                             inString = false;
                         }
@@ -142,7 +143,7 @@ bool HTMLValidator(std::string file) {
                 }
             }
             else {
-                if (isScriptOrCSS || inTag) {
+                if ((ch == '`' && inScript) || (ch != '`' && (isScriptOrCSS || inTag))) {
                     inString = true;
                     stringChar = ch;
                 }
@@ -165,44 +166,56 @@ bool HTMLValidator(std::string file) {
         // tags
 
         // detect start of a tag
-        else if (!inString && ch == '<') {
+        else if (!inHTMLComment && !inString && ch == '<') {
             inTag = true;
         }
 
         // check if the iteration is in a tag
-        else if (inTag) {
+        else if (!inHTMLComment && inTag) {
             // detect end of a tag
             if (ch == '>' || ch == ' ') {
                 // push or pop tags
                 if (isEndingTag) {
-                    isEndingTag = false;
-                    std::string check = stack.top();
+                    if (!stack.empty()) {
+                        isEndingTag = false;
+                        std::string check = stack.top();
 
-                    // compare the tag with the stack to check for errors
-                    if (tag == check) {
-                        stack.pop();
+                        // compare the tag with the stack to check for errors
+                        if (tag == check) {
+                            stack.pop();
 
-                        // reset script and css states
-                        inScript = false;
-                        inCSS = false;
+                            // reset script and css states
+                            inScript = false;
+                            inCSS = false;
+                        }
+                        else {
+                            // exit the validator
+                            din.close();
+
+                            // HTML nesting error
+                            std::cout << "Tag nesting error on line " << lineNum
+                                << " at character number " << charIndex - tag.size()
+                                << " for: </" << tag << ">\n"
+                                << "The expected tag was: </" << check << ">\n";
+
+                            return false;
+                        }
                     }
                     else {
                         // exit the validator
-
                         din.close();
 
                         // HTML nesting error
                         std::cout << "Tag nesting error on line " << lineNum
                             << " at character number " << charIndex - tag.size()
-                            << " for: </" << tag << ">\n"
-                            << "The expected tag was: </" << check << ">\n";
+                            << "\nCannot start with an end tag\n";
 
                         return false;
                     }
                 }
                 else {
                     // filter out special tags, comments, scripts, and CSS
-                    if ((!inScript && !inCSS && !isVoidElement(tag) && tag.substr(0, 3) != "!--")
+                    if ((!inScript && !inCSS && !isVoidElement(tag))
                         || (!inMultiComment && !inComment && (tag == scriptTag || tag == styleTag))) {
                         stack.push(tag);
                     }
@@ -220,9 +233,13 @@ bool HTMLValidator(std::string file) {
             else {
                 tag += ch;
 
-                // ignore javascript and CSS
+                // html comment
+                if (tag.substr(0, 3) == "!--") {
+                    inHTMLComment = true;
+                }
 
-                if (!isEndingTag && !inMultiComment && !inComment) {
+                // ignore javascript and CSS
+                else if (!isEndingTag && !inMultiComment && !inComment) {
                     if (inScript && scriptTag.substr(0, tag.length()) != tag) {
                         tag = "";
                         inTag = false;
@@ -232,6 +249,21 @@ bool HTMLValidator(std::string file) {
                         inTag = false;
                     }
                 }
+            }
+        }
+        else if (inHTMLComment && inTag) {
+            // detect end of a tag
+            if (ch == '>') {
+                if (tag.substr(tag.length() - 3) != "!--" && tag.substr(tag.length() - 2) == "--") {
+                    // reset vars for the next tag
+                    inHTMLComment = false;
+                    tag = "";
+                    inTag = false;
+                }
+            }
+            // build tag
+            else {
+                tag += ch;
             }
         }
 
