@@ -44,13 +44,15 @@ std::string scriptTag = "script",
  * @param {*} file the file name
  * @returns true if it is a valid file, false if it is not
  */
-bool HTMLValidator(std::string file) {
+bool HTMLValidator(std::string file, bool enableErrorMessages) {
     std::ifstream din;
     din.open(file);
 
     // check for file error
     if (din.fail()) {
-        std::cout << "The file failed to open\n";
+        if (enableErrorMessages) {
+            std::cout << "The file failed to open\n";
+        }
         return false;
     }
 
@@ -193,10 +195,12 @@ bool HTMLValidator(std::string file) {
                             din.close();
 
                             // HTML nesting error
-                            std::cout << "Tag nesting error on line " << lineNum
-                                << " at character number " << charIndex - tag.size()
-                                << " for: </" << tag << ">\n"
-                                << "The expected tag was: </" << check << ">\n";
+                            if (enableErrorMessages) {
+                                std::cout << "Tag nesting error on line " << lineNum
+                                    << " at character number " << charIndex - tag.size()
+                                    << " for: </" << tag << ">\n"
+                                    << "The expected tag was: </" << check << ">\n";
+                            }
 
                             return false;
                         }
@@ -206,9 +210,11 @@ bool HTMLValidator(std::string file) {
                         din.close();
 
                         // HTML nesting error
-                        std::cout << "Tag nesting error on line " << lineNum
-                            << " at character number " << charIndex - tag.size()
-                            << "\nCannot start with an end tag\n";
+                        if (enableErrorMessages) {
+                            std::cout << "Tag nesting error on line " << lineNum
+                                << " at character number " << charIndex - tag.size() - 1
+                                << "\nCannot start with an end tag\n";
+                        }
 
                         return false;
                     }
@@ -284,13 +290,17 @@ bool HTMLValidator(std::string file) {
     if (stack.size()) {
         // print all missing end tags
         while (stack.size()) {
-            std::cout << "Missing end tag for: <" << stack.top() << ">\n";
+            if (enableErrorMessages) {
+                std::cout << "Missing end tag for: <" << stack.top() << ">\n";
+            }
             stack.pop();
         }
 
         return false;
     }
 
-    std::cout << "This is a valid HTML file\n";
+    if (enableErrorMessages) {
+        std::cout << "This is a valid HTML file\n";
+    }
     return true;
 }

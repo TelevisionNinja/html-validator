@@ -7,6 +7,6 @@
 #include <stack>
 #include <string>
 
-bool HTMLValidator(std::string file);
+bool HTMLValidator(std::string file, bool enableErrorMessages = false);
 
 #endif
